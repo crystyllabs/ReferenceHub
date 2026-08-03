@@ -5,17 +5,28 @@ function handleReviewData(data) {
   const statusMessage = document.getElementById("status-message");
   const reviewsContainer = document.getElementById("reviews-container");
 
+  // Rating
   document.getElementById("average-rating").textContent =
     data.averageRating;
 
+  // Review Count
   document.getElementById("review-count").textContent =
     `${data.reviewCount} approved review${data.reviewCount === 1 ? "" : "s"}`;
 
+  // Clear existing reviews
   reviewsContainer.innerHTML = "";
 
+  // Create review cards
   data.reviews.forEach(review => {
+
     const card = document.createElement("div");
     card.className = "review-card";
+
+    const rating =
+      parseInt(review["Overall Professional Rating"]) || 0;
+
+    const stars =
+      "★".repeat(rating) + "☆".repeat(5 - rating);
 
     const reviewText =
       review["Public Review"] ||
@@ -37,45 +48,41 @@ function handleReviewData(data) {
       review["Company"] ||
       "";
 
-    const rating =
-      parseInt(review["Overall Professional Rating"], 10) || 0;
+    card.innerHTML = `
+      <div style="font-size:22px;margin-bottom:10px;">
+        ${stars}
+      </div>
 
-    const stars = document.createElement("p");
-    stars.textContent =
-      "★".repeat(Math.min(rating, 5)) +
-      "☆".repeat(Math.max(5 - rating, 0));
+      <p style="font-size:18px;font-style:italic;">
+        "${reviewText}"
+      </p>
 
-    const quote = document.createElement("p");
-    quote.textContent = `"${reviewText}"`;
+      <strong>${reviewerName}</strong>
 
-    const name = document.createElement("strong");
-    name.textContent = reviewerName;
-
-    const details = document.createElement("p");
-    details.textContent = [reviewerTitle, reviewerCompany]
-      .filter(Boolean)
-      .join(" • ");
-
-    card.appendChild(stars);
-    card.appendChild(quote);
-    card.appendChild(name);
-
-    if (details.textContent) {
-      card.appendChild(details);
-    }
+      <div style="color:#666;margin-top:4px;">
+        ${reviewerTitle}${reviewerTitle && reviewerCompany ? " • " : ""}${reviewerCompany}
+      </div>
+    `;
 
     reviewsContainer.appendChild(card);
+
   });
 
-  statusMessage.textContent =
-    data.reviewCount > 0 ? "" : "No approved reviews yet.";
+  if (data.reviewCount === 0) {
+    statusMessage.textContent = "No approved reviews yet.";
+  } else {
+    statusMessage.textContent = "";
+  }
 }
 
 function loadReviews() {
+
   const script = document.createElement("script");
 
   script.src =
-    `${API_URL}?callback=handleReviewData&timestamp=${Date.now()}`;
+    API_URL +
+    "?callback=handleReviewData&t=" +
+    new Date().getTime();
 
   script.onerror = function () {
     document.getElementById("status-message").textContent =
@@ -83,6 +90,7 @@ function loadReviews() {
   };
 
   document.body.appendChild(script);
+
 }
 
 loadReviews();
