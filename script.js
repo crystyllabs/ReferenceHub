@@ -13,56 +13,76 @@ function handleReviewData(data) {
 
   reviewsContainer.innerHTML = "";
 
- data.reviews.forEach(review => {
-  const card = document.createElement("div");
-  card.className = "review-card";
+  data.reviews.forEach(review => {
+    const card = document.createElement("div");
+    card.className = "review-card";
 
-  const reviewText =
-    review["Public Review"] ||
-    review["Professional Recommendation"] ||
-    "";
+    const reviewText =
+      review["Public Review"] ||
+      review["Professional Recommendation"] ||
+      "";
 
-  const reviewerName =
-    review["Public Reviewer Name"] ||
-    review["Full Name"] ||
-    "Anonymous";
+    const reviewerName =
+      review["Public Reviewer Name"] ||
+      review["Full Name"] ||
+      "Anonymous";
 
-  const reviewerTitle =
-    review["Public Reviewer Title"] ||
-    review["Title"] ||
-    "";
+    const reviewerTitle =
+      review["Public Reviewer Title"] ||
+      review["Title"] ||
+      "";
 
-  const reviewerCompany =
-    review["Public Reviewer Company"] ||
-    review["Company"] ||
-    "";
+    const reviewerCompany =
+      review["Public Reviewer Company"] ||
+      review["Company"] ||
+      "";
 
-  const rating =
-    parseInt(review["Overall Professional Rating"], 10) || 0;
+    const rating =
+      parseInt(review["Overall Professional Rating"], 10) || 0;
 
-  const stars = document.createElement("p");
-  stars.textContent =
-    "★".repeat(Math.min(rating, 5)) +
-    "☆".repeat(Math.max(5 - rating, 0));
+    const stars = document.createElement("p");
+    stars.textContent =
+      "★".repeat(Math.min(rating, 5)) +
+      "☆".repeat(Math.max(5 - rating, 0));
 
-  const quote = document.createElement("p");
-  quote.textContent = `"${reviewText}"`;
+    const quote = document.createElement("p");
+    quote.textContent = `"${reviewText}"`;
 
-  const name = document.createElement("strong");
-  name.textContent = reviewerName;
+    const name = document.createElement("strong");
+    name.textContent = reviewerName;
 
-  const details = document.createElement("p");
-  details.textContent = [reviewerTitle, reviewerCompany]
-    .filter(Boolean)
-    .join(" • ");
+    const details = document.createElement("p");
+    details.textContent = [reviewerTitle, reviewerCompany]
+      .filter(Boolean)
+      .join(" • ");
 
-  card.appendChild(stars);
-  card.appendChild(quote);
-  card.appendChild(name);
+    card.appendChild(stars);
+    card.appendChild(quote);
+    card.appendChild(name);
 
-  if (details.textContent) {
-    card.appendChild(details);
-  }
+    if (details.textContent) {
+      card.appendChild(details);
+    }
 
-  reviewsContainer.appendChild(card);
-});
+    reviewsContainer.appendChild(card);
+  });
+
+  statusMessage.textContent =
+    data.reviewCount > 0 ? "" : "No approved reviews yet.";
+}
+
+function loadReviews() {
+  const script = document.createElement("script");
+
+  script.src =
+    `${API_URL}?callback=handleReviewData&timestamp=${Date.now()}`;
+
+  script.onerror = function () {
+    document.getElementById("status-message").textContent =
+      "Unable to load reviews.";
+  };
+
+  document.body.appendChild(script);
+}
+
+loadReviews();
