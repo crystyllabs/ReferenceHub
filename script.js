@@ -13,33 +13,56 @@ function handleReviewData(data) {
 
   reviewsContainer.innerHTML = "";
 
-  data.reviews.forEach(review => {
-    const card = document.createElement("div");
-    card.className = "review-card";
+ data.reviews.forEach(review => {
+  const card = document.createElement("div");
+  card.className = "review-card";
 
-    const reviewText =
-      review["Public Review"] ||
-      review["Professional Recommendation"] ||
-      "";
+  const reviewText =
+    review["Public Review"] ||
+    review["Professional Recommendation"] ||
+    "";
 
-    card.textContent = reviewText;
+  const reviewerName =
+    review["Public Reviewer Name"] ||
+    review["Full Name"] ||
+    "Anonymous";
 
-    reviewsContainer.appendChild(card);
-  });
+  const reviewerTitle =
+    review["Public Reviewer Title"] ||
+    review["Title"] ||
+    "";
 
-  statusMessage.textContent =
-    data.reviewCount > 0 ? "" : "No approved reviews yet.";
-}
+  const reviewerCompany =
+    review["Public Reviewer Company"] ||
+    review["Company"] ||
+    "";
 
-function loadReviews() {
-  const script = document.createElement("script");
-  script.src = `${API_URL}?callback=handleReviewData`;
-  script.onerror = function () {
-    document.getElementById("status-message").textContent =
-      "Unable to load reviews.";
-  };
+  const rating =
+    parseInt(review["Overall Professional Rating"], 10) || 0;
 
-  document.body.appendChild(script);
-}
+  const stars = document.createElement("p");
+  stars.textContent =
+    "★".repeat(Math.min(rating, 5)) +
+    "☆".repeat(Math.max(5 - rating, 0));
 
-loadReviews();
+  const quote = document.createElement("p");
+  quote.textContent = `"${reviewText}"`;
+
+  const name = document.createElement("strong");
+  name.textContent = reviewerName;
+
+  const details = document.createElement("p");
+  details.textContent = [reviewerTitle, reviewerCompany]
+    .filter(Boolean)
+    .join(" • ");
+
+  card.appendChild(stars);
+  card.appendChild(quote);
+  card.appendChild(name);
+
+  if (details.textContent) {
+    card.appendChild(details);
+  }
+
+  reviewsContainer.appendChild(card);
+});
