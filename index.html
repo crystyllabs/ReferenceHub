@@ -2,89 +2,115 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
   <title>ReferenceHub</title>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
   <main class="page">
-    <section class="profile">
-      <p class="eyebrow">Professional Reputation Profile</p>
-      <h1>Crystyl Swanson</h1>
 
-      <p class="bio">
-        Commercial and go-to-market strategist focused on building scalable
-        product, sales, partnership, and customer growth systems.
-      </p>
-    </section>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Professional Reputation Profile</p>
 
-    <section class="rating-section">
-      <p class="label">Overall Professional Rating</p>
+        <h1>Crystyl Swanson</h1>
 
-      <div class="rating-row">
-        <span id="average-rating">Loading...</span>
-        <span>/ 5</span>
+        <p class="bio">
+          Commercial and go-to-market strategist focused on building
+          scalable product, sales, partnership, and customer growth
+          systems.
+        </p>
       </div>
 
-      <p id="review-count">Loading reviews...</p>
+      <aside class="rating-card">
+        <p class="rating-label">
+          Overall Professional Rating
+        </p>
+
+        <div class="rating-display">
+          <span id="average-rating">Loading...</span>
+          <span class="rating-scale">/ 5</span>
+        </div>
+
+        <div
+          id="average-stars"
+          class="average-stars"
+          aria-label="Overall professional rating"
+        ></div>
+
+        <p id="review-count">
+          Loading reviews...
+        </p>
+      </aside>
     </section>
 
-    <section class="featured-statements-section">
-  <p class="eyebrow">In Their Words</p>
-  <h2>What Colleagues Say</h2>
+    <section class="insights-section">
+      <div class="section-heading">
+        <p class="eyebrow">Professional Reputation Insights</p>
+        <h2>What the Feedback Shows</h2>
+      </div>
 
-  <div
-    id="statements-container"
-    class="statements-grid"
-  ></div>
-</section>
+      <div class="insights-grid">
+        <article class="insight-card qualities-card">
+          <div class="insight-icon">◆</div>
 
-<section class="reviews-section">
-  <p class="eyebrow">Professional Proof</p>
-  <h2>Professional Reviews</h2>
+          <h3>Top Professional Qualities</h3>
 
-  <p id="status-message">Loading reviews...</p>
+          <p class="insight-description">
+            The qualities most frequently selected by approved
+            reviewers.
+          </p>
 
-  <div id="reviews-container"></div>
-</section>
+          <div id="qualities-chart"></div>
+        </article>
 
-<section class="insights-section">
-  <p class="eyebrow">Professional Reputation Insights</p>
-  <h2>What the Feedback Shows</h2>
+        <article class="insight-card collaboration-card">
+          <div class="insight-icon">◇</div>
 
-  <div class="insights-grid">
-    <article class="insight-card">
-      <h3>Top Professional Qualities</h3>
+          <h3>Areas of Collaboration</h3>
 
-      <p class="insight-description">
-        The qualities most frequently selected by approved reviewers.
+          <p class="insight-description">
+            The areas where reviewers most frequently worked with
+            this professional.
+          </p>
+
+          <div id="collaboration-chart"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="statements-section">
+      <div class="section-heading">
+        <p class="eyebrow">In Their Words</p>
+        <h2>How Colleagues Describe This Professional</h2>
+      </div>
+
+      <div
+        id="statements-container"
+        class="statements-grid"
+      ></div>
+    </section>
+
+    <section class="reviews-section">
+      <div class="section-heading">
+        <p class="eyebrow">Professional Proof</p>
+        <h2>Featured Reviews</h2>
+      </div>
+
+      <p id="status-message">
+        Loading reviews...
       </p>
 
-      <div id="qualities-chart"></div>
-    </article>
+      <div id="reviews-container"></div>
+    </section>
 
-    <article class="insight-card">
-      <h3>Length of Professional Relationships</h3>
-
-      <p class="insight-description">
-        How long approved reviewers have known or worked with this professional.
-      </p>
-
-      <div id="relationship-length-chart"></div>
-    </article>
-
-    <article class="insight-card insight-card-wide">
-      <h3>Areas of Collaboration</h3>
-
-      <p class="insight-description">
-        The most common areas in which reviewers worked with this professional.
-      </p>
-
-      <div id="collaboration-chart"></div>
-    </article>
-  </div>
-</section>
   </main>
 
   <script src="script.js"></script>
