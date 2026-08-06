@@ -30,20 +30,6 @@ const HEADERS = {
     "Which areas did you work with this individual on? (select all that apply)"
 };
 
-const RELATIONSHIP_LENGTH_ORDER = [
-  "Less than 6 months",
-  "6 months–1 year",
-  "6 months - 1 year",
-  "6 months to 1 year",
-  "1–3 years",
-  "1-3 years",
-  "3–5 years",
-  "3-5 years",
-  "5–10 years",
-  "5-10 years",
-  "More than 10 years"
-];
-
 function handleReviewData(data) {
   const statusMessage =
     document.getElementById("status-message");
@@ -63,7 +49,6 @@ function handleReviewData(data) {
   renderStatements(reviews);
   renderReviews(reviews);
   renderTopQualities(reviews);
-  renderRelationshipLengths(reviews);
   renderCollaborationAreas(reviews);
 
   statusMessage.textContent =
@@ -73,27 +58,35 @@ function handleReviewData(data) {
 }
 
 function renderSummary(data) {
-  const ratingElement =
-    document.getElementById("average-rating");
+  const averageRating =
+    Number(data.averageRating) || 0;
 
-  const reviewCountElement =
-    document.getElementById("review-count");
+  document
+    .getElementById("average-rating")
+    .textContent =
+      formatRating(averageRating);
 
-  ratingElement.textContent =
-    formatRating(data.averageRating);
+  document
+    .getElementById("average-stars")
+    .textContent =
+      createStars(averageRating);
 
   const reviewCount =
     Number(data.reviewCount) || 0;
 
-  reviewCountElement.textContent =
-    `${reviewCount} approved review${
-      reviewCount === 1 ? "" : "s"
-    }`;
+  document
+    .getElementById("review-count")
+    .textContent =
+      `${reviewCount} approved review${
+        reviewCount === 1 ? "" : "s"
+      }`;
 }
 
 function renderStatements(reviews) {
   const container =
-    document.getElementById("statements-container");
+    document.getElementById(
+      "statements-container"
+    );
 
   container.replaceChildren();
 
@@ -109,26 +102,35 @@ function renderStatements(reviews) {
     }))
     .filter(statement => statement.text);
 
-  if (statements.length === 0) {
-    const message = document.createElement("p");
-    message.className = "empty-message";
-    message.textContent =
-      "No featured statements are available yet.";
+  if (!statements.length) {
+    renderEmptyMessage(
+      container,
+      "No statements are available yet."
+    );
 
-    container.appendChild(message);
     return;
   }
 
   statements.forEach(statement => {
-    const card = document.createElement("article");
+    const card =
+      document.createElement("article");
+
     card.className = "statement-card";
 
-    const quote = document.createElement("blockquote");
-    quote.textContent = `“${statement.text}”`;
+    const quote =
+      document.createElement("blockquote");
 
-    const attribution = document.createElement("p");
-    attribution.className = "statement-attribution";
-    attribution.textContent = `— ${statement.name}`;
+    quote.textContent =
+      `“${statement.text}”`;
+
+    const attribution =
+      document.createElement("p");
+
+    attribution.className =
+      "statement-attribution";
+
+    attribution.textContent =
+      `— ${statement.name}`;
 
     card.appendChild(quote);
     card.appendChild(attribution);
@@ -139,16 +141,21 @@ function renderStatements(reviews) {
 
 function renderReviews(reviews) {
   const container =
-    document.getElementById("reviews-container");
+    document.getElementById(
+      "reviews-container"
+    );
 
   container.replaceChildren();
 
   reviews.forEach(review => {
-    const card = document.createElement("article");
+    const card =
+      document.createElement("article");
+
     card.className = "review-card";
 
-    const rating =
-      clampRating(review[HEADERS.rating]);
+    const rating = clampRating(
+      review[HEADERS.rating]
+    );
 
     const reviewText = getValue(
       review,
@@ -176,22 +183,35 @@ function renderReviews(reviews) {
       HEADERS.relationship
     );
 
-    const stars = document.createElement("p");
+    const relationshipLength = getValue(
+      review,
+      HEADERS.relationshipLength
+    );
+
+    const stars =
+      document.createElement("p");
+
     stars.className = "review-stars";
-    stars.textContent =
-      "★".repeat(rating) +
-      "☆".repeat(5 - rating);
+    stars.textContent = createStars(rating);
 
-    const quote = document.createElement("blockquote");
+    const quote =
+      document.createElement("blockquote");
+
     quote.className = "review-quote";
-    quote.textContent = `“${reviewText}”`;
+    quote.textContent =
+      `“${reviewText}”`;
 
-    const name = document.createElement("p");
+    const name =
+      document.createElement("p");
+
     name.className = "reviewer-name";
     name.textContent = reviewerName;
 
-    const details = document.createElement("p");
+    const details =
+      document.createElement("p");
+
     details.className = "reviewer-details";
+
     details.textContent = [
       reviewerTitle,
       reviewerCompany
@@ -199,16 +219,24 @@ function renderReviews(reviews) {
       .filter(Boolean)
       .join(" • ");
 
-    const relationshipElement =
-      document.createElement("p");
+    const metadata =
+      document.createElement("div");
 
-    relationshipElement.className =
-      "reviewer-relationship";
+    metadata.className = "review-metadata";
 
-    relationshipElement.textContent =
-      relationship
-        ? `Professional relationship: ${relationship}`
-        : "";
+    if (relationship) {
+      metadata.appendChild(
+        createMetadataChip(relationship)
+      );
+    }
+
+    if (relationshipLength) {
+      metadata.appendChild(
+        createMetadataChip(
+          relationshipLength
+        )
+      );
+    }
 
     card.appendChild(stars);
 
@@ -222,8 +250,8 @@ function renderReviews(reviews) {
       card.appendChild(details);
     }
 
-    if (relationshipElement.textContent) {
-      card.appendChild(relationshipElement);
+    if (metadata.children.length) {
+      card.appendChild(metadata);
     }
 
     container.appendChild(card);
@@ -246,87 +274,26 @@ function renderTopQualities(reviews) {
   );
 }
 
-function renderRelationshipLengths(reviews) {
-  const counts = {};
-
-  reviews.forEach(review => {
-    const value = getValue(
-      review,
-      HEADERS.relationshipLength
-    );
-
-    if (!value) return;
-
-    counts[value] = (counts[value] || 0) + 1;
-  });
-
-  const knownOrder = [
-    "Less than 6 months",
-    "6 months–1 year",
-    "6 months - 1 year",
-    "6 months to 1 year",
-    "1–3 years",
-    "1-3 years",
-    "3–5 years",
-    "3-5 years",
-    "5–10 years",
-    "5-10 years",
-    "More than 10 years"
-  ];
-
-  const orderedResults = [];
-
-  knownOrder.forEach(label => {
-    if (counts[label]) {
-      orderedResults.push([
-        normalizeRelationshipLength(label),
-        counts[label]
-      ]);
-    }
-  });
-
-  Object.entries(counts).forEach(
-    ([label, count]) => {
-      const normalized =
-        normalizeRelationshipLength(label);
-
-      const alreadyAdded =
-        orderedResults.some(
-          item => item[0] === normalized
-        );
-
-      if (!alreadyAdded) {
-        orderedResults.push([
-          normalized,
-          count
-        ]);
-      }
-    }
-  );
-
-  renderBarChart(
-    "relationship-length-chart",
-    orderedResults,
-    "No relationship-length information is available yet."
-  );
-}
-
 function renderCollaborationAreas(reviews) {
   const counts = countSelections(
     reviews,
     HEADERS.collaborationAreas
   );
 
-  const sortedAreas = sortCounts(counts);
+  const topAreas = sortCounts(counts)
+    .slice(0, 8);
 
   renderBarChart(
     "collaboration-chart",
-    sortedAreas,
+    topAreas,
     "No collaboration areas are available yet."
   );
 }
 
-function countSelections(reviews, headerName) {
+function countSelections(
+  reviews,
+  headerName
+) {
   const counts = {};
 
   reviews.forEach(review => {
@@ -377,13 +344,11 @@ function renderBarChart(
   container.replaceChildren();
 
   if (!entries.length) {
-    const message =
-      document.createElement("p");
+    renderEmptyMessage(
+      container,
+      emptyMessage
+    );
 
-    message.className = "empty-message";
-    message.textContent = emptyMessage;
-
-    container.appendChild(message);
     return;
   }
 
@@ -392,49 +357,76 @@ function renderBarChart(
   );
 
   entries.forEach(([label, count]) => {
-    const item = document.createElement("div");
+    const item =
+      document.createElement("div");
+
     item.className = "bar-chart-item";
 
     const heading =
       document.createElement("div");
 
-    heading.className = "bar-chart-heading";
+    heading.className =
+      "bar-chart-heading";
 
     const labelElement =
       document.createElement("span");
 
-    labelElement.className = "bar-chart-label";
+    labelElement.className =
+      "bar-chart-label";
+
     labelElement.textContent = label;
 
     const countElement =
       document.createElement("span");
 
-    countElement.className = "bar-chart-count";
+    countElement.className =
+      "bar-chart-count";
+
     countElement.textContent =
-      `${count} reviewer${count === 1 ? "" : "s"}`;
+      `${count} reviewer${
+        count === 1 ? "" : "s"
+      }`;
 
-    heading.appendChild(labelElement);
-    heading.appendChild(countElement);
+    const track =
+      document.createElement("div");
 
-    const track = document.createElement("div");
-    track.className = "bar-chart-track";
+    track.className =
+      "bar-chart-track";
 
-    const bar = document.createElement("div");
-    bar.className = "bar-chart-bar";
+    const bar =
+      document.createElement("div");
+
+    bar.className =
+      "bar-chart-bar";
 
     const percentage =
       maximumValue > 0
         ? (count / maximumValue) * 100
         : 0;
 
-    bar.style.width = `${percentage}%`;
+    bar.style.width =
+      `${percentage}%`;
+
+    heading.appendChild(labelElement);
+    heading.appendChild(countElement);
 
     track.appendChild(bar);
+
     item.appendChild(heading);
     item.appendChild(track);
 
     container.appendChild(item);
   });
+}
+
+function createMetadataChip(text) {
+  const chip =
+    document.createElement("span");
+
+  chip.className = "metadata-chip";
+  chip.textContent = text;
+
+  return chip;
 }
 
 function getReviewerName(review) {
@@ -447,7 +439,10 @@ function getReviewerName(review) {
   );
 }
 
-function getValue(review, ...headerNames) {
+function getValue(
+  review,
+  ...headerNames
+) {
   for (const headerName of headerNames) {
     const value = String(
       review[headerName] || ""
@@ -466,13 +461,21 @@ function getValue(review, ...headerNames) {
 }
 
 function clampRating(value) {
-  const rating = Math.round(
-    Number(value) || 0
-  );
+  const rating =
+    Math.round(Number(value) || 0);
 
   return Math.max(
     0,
     Math.min(5, rating)
+  );
+}
+
+function createStars(value) {
+  const rating = clampRating(value);
+
+  return (
+    "★".repeat(rating) +
+    "☆".repeat(5 - rating)
   );
 }
 
@@ -488,15 +491,17 @@ function formatRating(value) {
     : rating.toFixed(2);
 }
 
-function normalizeRelationshipLength(value) {
-  const normalized = String(value)
-    .replace("6 months - 1 year", "6 months–1 year")
-    .replace("6 months to 1 year", "6 months–1 year")
-    .replace("1-3 years", "1–3 years")
-    .replace("3-5 years", "3–5 years")
-    .replace("5-10 years", "5–10 years");
+function renderEmptyMessage(
+  container,
+  message
+) {
+  const element =
+    document.createElement("p");
 
-  return normalized;
+  element.className = "empty-message";
+  element.textContent = message;
+
+  container.appendChild(element);
 }
 
 function loadReviews() {
