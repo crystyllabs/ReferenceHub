@@ -35,8 +35,10 @@ function handleReviewData(data) {
     document.getElementById("status-message");
 
   if (!data || data.success !== true) {
-    statusMessage.textContent =
-      "Unable to load reviews.";
+    if (statusMessage) {
+      statusMessage.textContent =
+        "Unable to load reviews.";
+    }
 
     return;
   }
@@ -44,6 +46,22 @@ function handleReviewData(data) {
   const reviews = Array.isArray(data.reviews)
     ? data.reviews
     : [];
+
+  renderProfile(data.profile || {});
+  renderSummary(data);
+  renderTopQualities(reviews);
+  renderCollaborationAreas(reviews);
+  renderStatements(reviews);
+  renderReviews(reviews);
+
+  if (statusMessage) {
+    statusMessage.textContent =
+      reviews.length > 0
+        ? ""
+        : "No approved reviews yet.";
+  }
+}
+
 function renderProfile(profile) {
   const nameElement =
     document.getElementById("profile-name");
@@ -57,20 +75,46 @@ function renderProfile(profile) {
   const headshotElement =
     document.getElementById("profile-headshot");
 
-  nameElement.textContent =
-    profile.fullName || "Professional Profile";
+  if (nameElement) {
+    nameElement.textContent =
+      profile.fullName ||
+      "Professional Profile";
+  }
 
-  headlineElement.textContent =
-    profile.headline || "";
+  if (headlineElement) {
+    headlineElement.textContent =
+      profile.headline || "";
 
-  bioElement.textContent =
-    profile.bio || "";
+    headlineElement.hidden =
+      !profile.headline;
+  }
 
-  if (profile.headshotUrl) {
-    headshotElement.src = profile.headshotUrl;
-    headshotElement.hidden = false;
-  } else {
-    headshotElement.hidden = true;
+  if (bioElement) {
+    bioElement.textContent =
+      profile.bio || "";
+
+    bioElement.hidden =
+      !profile.bio;
+  }
+
+  if (headshotElement) {
+    if (profile.headshotUrl) {
+      headshotElement.src =
+        profile.headshotUrl;
+
+      headshotElement.alt =
+        profile.fullName
+          ? `${profile.fullName} professional headshot`
+          : "Professional headshot";
+
+      headshotElement.hidden = false;
+
+      headshotElement.onerror = function () {
+        headshotElement.hidden = true;
+      };
+    } else {
+      headshotElement.hidden = true;
+    }
   }
 
   configureProfileLink(
@@ -93,49 +137,136 @@ function configureProfileLink(elementId, url) {
   const link =
     document.getElementById(elementId);
 
-  if (!url) {
-    link.hidden = true;
+  if (!link) {
     return;
   }
 
-  link.href = url;
-  link.hidden = false;
-}
-  renderSummary(data);
-  renderStatements(reviews);
-  renderReviews(reviews);
-  renderTopQualities(reviews);
-  renderCollaborationAreas(reviews);
+  const cleanUrl =
+    String(url || "").trim();
 
-  statusMessage.textContent =
-    reviews.length > 0
-      ? ""
-      : "No approved reviews yet.";
+  if (!cleanUrl) {
+    link.hidden = true;
+    link.removeAttribute("href");
+    return;
+  }
+
+  link.href = cleanUrl;
+  link.hidden = false;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
 }
-renderProfile(data.profile || {});
+
 function renderSummary(data) {
+  const ratingElement =
+    document.getElementById(
+      "average-rating"
+    );
+
+  const starsElement =
+    document.getElementById(
+      "average-stars"
+    );
+
+  const countElement =
+    document.getElementById(
+      "review-count"
+    );
+
   const averageRating =
     Number(data.averageRating) || 0;
-
-  document
-    .getElementById("average-rating")
-    .textContent =
-      formatRating(averageRating);
-
-  document
-    .getElementById("average-stars")
-    .textContent =
-      createStars(averageRating);
 
   const reviewCount =
     Number(data.reviewCount) || 0;
 
-  document
-    .getElementById("review-count")
-    .textContent =
+  if (ratingElement) {
+    ratingElement.textContent =
+      formatRating(averageRating);
+  }
+
+  if (starsElement) {
+    starsElement.textContent =
+      createStars(averageRating);
+
+    starsElement.setAttribute(
+      "aria-label",
+      `${formatRating(
+        averageRating
+      )} out of 5 stars`
+    );
+  }
+
+  if (countElement) {
+    countElement.textContent =
       `${reviewCount} approved review${
         reviewCount === 1 ? "" : "s"
       }`;
+  }
+}
+
+function renderTopQualities(reviews) {
+  const counts =
+    countSelections(
+      reviews,
+      HEADERS.qualities
+    );
+
+  const topFive =
+    sortCounts(counts).slice(0, 5);
+
+  renderBarChart(
+    "qualities-chart",
+    topFive,
+    "No professional qualities are available yet."
+  );
+}
+
+function renderCollaborationAreas(reviews) {
+  const counts = {};
+
+  reviews.forEach(review => {
+    const exactValue = getValue(
+      review,
+      HEADERS.collaborationAreas
+    );
+
+    const matchingHeader =
+      Object.keys(review).find(key =>
+        key
+          .toLowerCase()
+          .includes(
+            "which areas did you work with this individual"
+          )
+      );
+
+    const rawValue =
+      exactValue ||
+      (
+        matchingHeader
+          ? String(
+              review[matchingHeader] || ""
+            ).trim()
+          : ""
+      );
+
+    if (!rawValue) {
+      return;
+    }
+
+    splitSelections(rawValue)
+      .forEach(item => {
+        counts[item] =
+          (counts[item] || 0) + 1;
+      });
+  });
+
+  const topAreas =
+    sortCounts(counts).slice(0, 8);
+
+  renderBarChart(
+    "collaboration-chart",
+    topAreas,
+    "No collaboration areas are available yet."
+  );
 }
 
 function renderStatements(reviews) {
@@ -143,6 +274,10 @@ function renderStatements(reviews) {
     document.getElementById(
       "statements-container"
     );
+
+  if (!container) {
+    return;
+  }
 
   container.replaceChildren();
 
@@ -174,7 +309,9 @@ function renderStatements(reviews) {
     card.className = "statement-card";
 
     const quote =
-      document.createElement("blockquote");
+      document.createElement(
+        "blockquote"
+      );
 
     quote.textContent =
       `“${statement.text}”`;
@@ -200,6 +337,10 @@ function renderReviews(reviews) {
     document.getElementById(
       "reviews-container"
     );
+
+  if (!container) {
+    return;
+  }
 
   container.replaceChildren();
 
@@ -239,19 +380,23 @@ function renderReviews(reviews) {
       HEADERS.relationship
     );
 
-    const relationshipLength = getValue(
-      review,
-      HEADERS.relationshipLength
-    );
+    const relationshipLength =
+      getValue(
+        review,
+        HEADERS.relationshipLength
+      );
 
     const stars =
       document.createElement("p");
 
     stars.className = "review-stars";
-    stars.textContent = createStars(rating);
+    stars.textContent =
+      createStars(rating);
 
     const quote =
-      document.createElement("blockquote");
+      document.createElement(
+        "blockquote"
+      );
 
     quote.className = "review-quote";
     quote.textContent =
@@ -266,7 +411,8 @@ function renderReviews(reviews) {
     const details =
       document.createElement("p");
 
-    details.className = "reviewer-details";
+    details.className =
+      "reviewer-details";
 
     details.textContent = [
       reviewerTitle,
@@ -278,11 +424,14 @@ function renderReviews(reviews) {
     const metadata =
       document.createElement("div");
 
-    metadata.className = "review-metadata";
+    metadata.className =
+      "review-metadata";
 
     if (relationship) {
       metadata.appendChild(
-        createMetadataChip(relationship)
+        createMetadataChip(
+          relationship
+        )
       );
     }
 
@@ -314,58 +463,6 @@ function renderReviews(reviews) {
   });
 }
 
-function renderTopQualities(reviews) {
-  const counts = countSelections(
-    reviews,
-    HEADERS.qualities
-  );
-
-  const topFive = sortCounts(counts)
-    .slice(0, 5);
-
-  renderBarChart(
-    "qualities-chart",
-    topFive,
-    "No professional qualities are available yet."
-  );
-}
-
-function renderCollaborationAreas(reviews) {
-  const counts = {};
-
-  reviews.forEach(review => {
-    const collaborationKey = Object.keys(review).find(key =>
-      key
-        .toLowerCase()
-        .includes("which areas did you work with this individual")
-    );
-
-    if (!collaborationKey) return;
-
-    const rawValue = String(
-      review[collaborationKey] || ""
-    ).trim();
-
-    if (!rawValue) return;
-
-    rawValue
-      .split(",")
-      .map(item => item.trim())
-      .filter(Boolean)
-      .forEach(item => {
-        counts[item] = (counts[item] || 0) + 1;
-      });
-  });
-
-  const topAreas = sortCounts(counts).slice(0, 8);
-
-  renderBarChart(
-    "collaboration-chart",
-    topAreas,
-    "No collaboration areas are available yet."
-  );
-}
-
 function countSelections(
   reviews,
   headerName
@@ -378,12 +475,11 @@ function countSelections(
       headerName
     );
 
-    if (!rawValue) return;
+    if (!rawValue) {
+      return;
+    }
 
-    rawValue
-      .split(",")
-      .map(item => item.trim())
-      .filter(Boolean)
+    splitSelections(rawValue)
       .forEach(item => {
         counts[item] =
           (counts[item] || 0) + 1;
@@ -391,6 +487,13 @@ function countSelections(
   });
 
   return counts;
+}
+
+function splitSelections(rawValue) {
+  return String(rawValue)
+    .split(",")
+    .map(item => item.trim())
+    .filter(Boolean);
 }
 
 function sortCounts(counts) {
@@ -415,7 +518,13 @@ function renderBarChart(
   emptyMessage
 ) {
   const container =
-    document.getElementById(containerId);
+    document.getElementById(
+      containerId
+    );
+
+  if (!container) {
+    return;
+  }
 
   container.replaceChildren();
 
@@ -432,67 +541,78 @@ function renderBarChart(
     ...entries.map(entry => entry[1])
   );
 
-  entries.forEach(([label, count]) => {
-    const item =
-      document.createElement("div");
+  entries.forEach(
+    ([label, count]) => {
+      const item =
+        document.createElement("div");
 
-    item.className = "bar-chart-item";
+      item.className =
+        "bar-chart-item";
 
-    const heading =
-      document.createElement("div");
+      const heading =
+        document.createElement("div");
 
-    heading.className =
-      "bar-chart-heading";
+      heading.className =
+        "bar-chart-heading";
 
-    const labelElement =
-      document.createElement("span");
+      const labelElement =
+        document.createElement("span");
 
-    labelElement.className =
-      "bar-chart-label";
+      labelElement.className =
+        "bar-chart-label";
 
-    labelElement.textContent = label;
+      labelElement.textContent = label;
 
-    const countElement =
-      document.createElement("span");
+      const countElement =
+        document.createElement("span");
 
-    countElement.className =
-      "bar-chart-count";
+      countElement.className =
+        "bar-chart-count";
 
-    countElement.textContent =
-      `${count} reviewer${
-        count === 1 ? "" : "s"
-      }`;
+      countElement.textContent =
+        `${count} reviewer${
+          count === 1 ? "" : "s"
+        }`;
 
-    const track =
-      document.createElement("div");
+      const track =
+        document.createElement("div");
 
-    track.className =
-      "bar-chart-track";
+      track.className =
+        "bar-chart-track";
 
-    const bar =
-      document.createElement("div");
+      const bar =
+        document.createElement("div");
 
-    bar.className =
-      "bar-chart-bar";
+      bar.className =
+        "bar-chart-bar";
 
-    const percentage =
-      maximumValue > 0
-        ? (count / maximumValue) * 100
-        : 0;
+      const percentage =
+        maximumValue > 0
+          ? (
+              count /
+              maximumValue
+            ) * 100
+          : 0;
 
-    bar.style.width =
-      `${percentage}%`;
+      bar.style.width =
+        `${percentage}%`;
 
-    heading.appendChild(labelElement);
-    heading.appendChild(countElement);
+      heading.appendChild(
+        labelElement
+      );
 
-    track.appendChild(bar);
+      heading.appendChild(
+        countElement
+      );
 
-    item.appendChild(heading);
-    item.appendChild(track);
+      track.appendChild(bar);
 
-    container.appendChild(item);
-  });
+      item.appendChild(heading);
+      item.appendChild(track);
+
+      container.appendChild(item);
+    }
+  );
 }
 
 function createMetadataChip(text) {
@@ -519,15 +639,20 @@ function getValue(
   review,
   ...headerNames
 ) {
-  for (const headerName of headerNames) {
+  for (
+    const headerName of headerNames
+  ) {
     const value = String(
       review[headerName] || ""
     ).trim();
 
+    const normalized =
+      value.toLowerCase();
+
     if (
       value &&
-      value.toLowerCase() !== "yes" &&
-      value.toLowerCase() !== "no"
+      normalized !== "yes" &&
+      normalized !== "no"
     ) {
       return value;
     }
@@ -538,7 +663,9 @@ function getValue(
 
 function clampRating(value) {
   const rating =
-    Math.round(Number(value) || 0);
+    Math.round(
+      Number(value) || 0
+    );
 
   return Math.max(
     0,
@@ -547,7 +674,8 @@ function clampRating(value) {
 }
 
 function createStars(value) {
-  const rating = clampRating(value);
+  const rating =
+    clampRating(value);
 
   return (
     "★".repeat(rating) +
@@ -574,7 +702,9 @@ function renderEmptyMessage(
   const element =
     document.createElement("p");
 
-  element.className = "empty-message";
+  element.className =
+    "empty-message";
+
   element.textContent = message;
 
   container.appendChild(element);
@@ -590,10 +720,15 @@ function loadReviews() {
     `&timestamp=${Date.now()}`;
 
   script.onerror = function () {
-    document
-      .getElementById("status-message")
-      .textContent =
+    const statusMessage =
+      document.getElementById(
+        "status-message"
+      );
+
+    if (statusMessage) {
+      statusMessage.textContent =
         "Unable to load reviews.";
+    }
   };
 
   document.body.appendChild(script);
