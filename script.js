@@ -275,13 +275,33 @@ function renderTopQualities(reviews) {
 }
 
 function renderCollaborationAreas(reviews) {
-  const counts = countSelections(
-    reviews,
-    HEADERS.collaborationAreas
-  );
+  const counts = {};
 
-  const topAreas = sortCounts(counts)
-    .slice(0, 8);
+  reviews.forEach(review => {
+    const collaborationKey = Object.keys(review).find(key =>
+      key
+        .toLowerCase()
+        .includes("which areas did you work with this individual")
+    );
+
+    if (!collaborationKey) return;
+
+    const rawValue = String(
+      review[collaborationKey] || ""
+    ).trim();
+
+    if (!rawValue) return;
+
+    rawValue
+      .split(",")
+      .map(item => item.trim())
+      .filter(Boolean)
+      .forEach(item => {
+        counts[item] = (counts[item] || 0) + 1;
+      });
+  });
+
+  const topAreas = sortCounts(counts).slice(0, 8);
 
   renderBarChart(
     "collaboration-chart",
