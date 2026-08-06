@@ -44,7 +44,63 @@ function handleReviewData(data) {
   const reviews = Array.isArray(data.reviews)
     ? data.reviews
     : [];
+function renderProfile(profile) {
+  const nameElement =
+    document.getElementById("profile-name");
 
+  const headlineElement =
+    document.getElementById("profile-headline");
+
+  const bioElement =
+    document.getElementById("profile-bio");
+
+  const headshotElement =
+    document.getElementById("profile-headshot");
+
+  nameElement.textContent =
+    profile.fullName || "Professional Profile";
+
+  headlineElement.textContent =
+    profile.headline || "";
+
+  bioElement.textContent =
+    profile.bio || "";
+
+  if (profile.headshotUrl) {
+    headshotElement.src = profile.headshotUrl;
+    headshotElement.hidden = false;
+  } else {
+    headshotElement.hidden = true;
+  }
+
+  configureProfileLink(
+    "linkedin-link",
+    profile.linkedinUrl
+  );
+
+  configureProfileLink(
+    "website-link",
+    profile.websiteUrl
+  );
+
+  configureProfileLink(
+    "bragbook-link",
+    profile.bragbookUrl
+  );
+}
+
+function configureProfileLink(elementId, url) {
+  const link =
+    document.getElementById(elementId);
+
+  if (!url) {
+    link.hidden = true;
+    return;
+  }
+
+  link.href = url;
+  link.hidden = false;
+}
   renderSummary(data);
   renderStatements(reviews);
   renderReviews(reviews);
@@ -56,7 +112,7 @@ function handleReviewData(data) {
       ? ""
       : "No approved reviews yet.";
 }
-
+renderProfile(data.profile || {});
 function renderSummary(data) {
   const averageRating =
     Number(data.averageRating) || 0;
