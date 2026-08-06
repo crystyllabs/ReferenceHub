@@ -98,9 +98,11 @@ function renderProfile(profile) {
   }
 
   if (headshotElement) {
-    if (profile.headshotUrl) {
-      headshotElement.src =
-        profile.headshotUrl;
+    const headshotUrl =
+      String(profile.headshotUrl || "").trim();
+
+    if (headshotUrl) {
+      headshotElement.src = headshotUrl;
 
       headshotElement.alt =
         profile.fullName
@@ -110,6 +112,11 @@ function renderProfile(profile) {
       headshotElement.hidden = false;
 
       headshotElement.onerror = function () {
+        console.error(
+          "The headshot URL could not be loaded:",
+          headshotUrl
+        );
+
         headshotElement.hidden = true;
       };
     } else {
