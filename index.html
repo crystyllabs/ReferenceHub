@@ -10,6 +10,11 @@
 
   <title>ReferenceHub</title>
 
+  <meta
+    name="description"
+    content="A professional reputation profile built from approved colleague reviews."
+  />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -82,31 +87,41 @@
         </div>
       </div>
 
-      <aside class="rating-card">
-        <p class="rating-label">
-          Overall Professional Rating
+      <aside class="word-cloud-card">
+        <p class="word-cloud-label">
+          Most Common Descriptions
         </p>
-
-        <div class="rating-display">
-          <span id="average-rating">
-            Loading...
-          </span>
-
-          <span class="rating-scale">
-            / 5
-          </span>
-        </div>
 
         <div
-          id="average-stars"
-          class="average-stars"
-          aria-label="Overall professional rating"
-        ></div>
+          id="word-cloud"
+          class="word-cloud"
+          aria-label="Words most often used in approved feedback"
+        >
+          Loading feedback...
+        </div>
 
-        <p id="review-count">
-          Loading reviews...
-        </p>
+        <div class="executive-summary-inline">
+          <h2>Executive Summary</h2>
+          <p id="executive-summary">Loading summary...</p>
+        </div>
       </aside>
+    </section>
+
+    <section class="summary-section">
+      <div class="section-heading">
+        <p class="eyebrow">
+          Feedback Synthesis
+        </p>
+
+        <h2>
+          The Professional Experience
+        </h2>
+      </div>
+
+      <article class="summary-card">
+        <h3>What It Is Like to Work With This Person</h3>
+        <p id="working-with-summary">Loading summary...</p>
+      </article>
     </section>
 
     <section class="insights-section">
@@ -121,22 +136,6 @@
       </div>
 
       <div class="insights-grid">
-        <article class="insight-card qualities-card">
-          <div class="insight-icon">
-            ◆
-          </div>
-
-          <h3>
-            Top Professional Qualities
-          </h3>
-
-          <p class="insight-description">
-            The qualities most frequently selected by approved reviewers.
-          </p>
-
-          <div id="qualities-chart"></div>
-        </article>
-
         <article class="insight-card collaboration-card">
           <div class="insight-icon">
             ◇
@@ -170,6 +169,15 @@
         id="statements-container"
         class="statements-grid"
       ></div>
+
+      <button
+        id="load-more-statements"
+        class="load-more-button"
+        type="button"
+        hidden
+      >
+        Show more statements
+      </button>
     </section>
 
     <section class="reviews-section">
@@ -188,10 +196,19 @@
       </p>
 
       <div id="reviews-container"></div>
+
+      <button
+        id="load-more-reviews"
+        class="load-more-button"
+        type="button"
+        hidden
+      >
+        Show more reviews
+      </button>
     </section>
 
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
