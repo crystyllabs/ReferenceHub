@@ -15,7 +15,7 @@
     content="A professional reputation profile built from approved colleague reviews."
   />
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 
 <body>
@@ -85,26 +85,26 @@
             Bragbook
           </a>
         </div>
+
+        <aside class="word-cloud-card">
+          <p class="word-cloud-label">
+            Most Common Descriptions
+          </p>
+
+          <div
+            id="word-cloud"
+            class="word-cloud"
+            aria-label="Reviewer-selected professional qualities"
+          >
+            Loading feedback...
+          </div>
+
+          <div class="executive-summary-inline">
+            <h2>Executive Summary</h2>
+            <p id="executive-summary">Loading summary...</p>
+          </div>
+        </aside>
       </div>
-
-      <aside class="word-cloud-card">
-        <p class="word-cloud-label">
-          Most Common Descriptions
-        </p>
-
-        <div
-          id="word-cloud"
-          class="word-cloud"
-          aria-label="Words most often used in approved feedback"
-        >
-          Loading feedback...
-        </div>
-
-        <div class="executive-summary-inline">
-          <h2>Executive Summary</h2>
-          <p id="executive-summary">Loading summary...</p>
-        </div>
-      </aside>
     </section>
 
     <section class="summary-section">
@@ -209,6 +209,6 @@
 
   </main>
 
-  <script src="script.js" defer></script>
+  <script src="script.js?v=4" defer></script>
 </body>
 </html>
