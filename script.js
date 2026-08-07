@@ -1,6 +1,20 @@
 const API_URL =
   "https://script.google.com/macros/s/AKfycby0uePApOFx_D06Yb9tnIq0Xj15Q5iXz_Tg7WB6OHCVIaVIiJ-HaC_PtS-CXubF02ChrA/exec";
 
+const APP_CONFIG = Object.freeze({
+  initialStatements: 6,
+  statementsPerPage: 6,
+  initialReviews: 10,
+  reviewsPerPage: 10,
+  requestTimeoutMs: 15000
+});
+
+const appState = {
+  reviews: [],
+  visibleStatements: APP_CONFIG.initialStatements,
+  visibleReviews: APP_CONFIG.initialReviews
+};
+
 const HEADERS = {
   rating: "Overall Professional Rating",
 
@@ -44,8 +58,10 @@ function handleReviewData(data) {
   }
 
   const reviews = Array.isArray(data.reviews)
-    ? data.reviews
+    ? data.reviews.filter(review => review && typeof review === "object")
     : [];
+
+  appState.reviews = reviews;
 
   renderProfile(data.profile || {});
   renderSummary(data);
@@ -98,8 +114,9 @@ function renderProfile(profile) {
   }
 
   if (headshotElement) {
-    const headshotUrl =
-      String(profile.headshotUrl || "").trim();
+    const headshotUrl = getSafeHttpUrl(
+      String(profile.headshotUrl || "").trim()
+    );
 
     if (headshotUrl) {
       headshotElement.src = headshotUrl;
@@ -151,13 +168,15 @@ function configureProfileLink(elementId, url) {
   const cleanUrl =
     String(url || "").trim();
 
-  if (!cleanUrl) {
+  const safeUrl = getSafeHttpUrl(cleanUrl);
+
+  if (!safeUrl) {
     link.hidden = true;
     link.removeAttribute("href");
     return;
   }
 
-  link.href = cleanUrl;
+  link.href = safeUrl;
   link.hidden = false;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
@@ -309,7 +328,13 @@ function renderStatements(reviews) {
     return;
   }
 
-  statements.forEach(statement => {
+  const visibleStatements = statements.slice(
+    0,
+    appState.visibleStatements
+  );
+  const fragment = document.createDocumentFragment();
+
+  visibleStatements.forEach(statement => {
     const card =
       document.createElement("article");
 
@@ -335,8 +360,15 @@ function renderStatements(reviews) {
     card.appendChild(quote);
     card.appendChild(attribution);
 
-    container.appendChild(card);
+    fragment.appendChild(card);
   });
+
+  container.appendChild(fragment);
+  updateLoadMoreButton(
+    "load-more-statements",
+    visibleStatements.length,
+    statements.length
+  );
 }
 
 function renderReviews(reviews) {
@@ -351,7 +383,13 @@ function renderReviews(reviews) {
 
   container.replaceChildren();
 
-  reviews.forEach(review => {
+  const visibleReviews = reviews.slice(
+    0,
+    appState.visibleReviews
+  );
+  const fragment = document.createDocumentFragment();
+
+  visibleReviews.forEach(review => {
     const card =
       document.createElement("article");
 
@@ -466,8 +504,15 @@ function renderReviews(reviews) {
       card.appendChild(metadata);
     }
 
-    container.appendChild(card);
+    fragment.appendChild(card);
   });
+
+  container.appendChild(fragment);
+  updateLoadMoreButton(
+    "load-more-reviews",
+    visibleReviews.length,
+    reviews.length
+  );
 }
 
 function countSelections(
@@ -498,7 +543,7 @@ function countSelections(
 
 function splitSelections(rawValue) {
   return String(rawValue)
-    .split(",")
+    .split(/[,;\n]/)
     .map(item => item.trim())
     .filter(Boolean);
 }
@@ -717,6 +762,40 @@ function renderEmptyMessage(
   container.appendChild(element);
 }
 
+function getSafeHttpUrl(value) {
+  try {
+    const url = new URL(value, window.location.href);
+    return ["http:", "https:"].includes(url.protocol)
+      ? url.href
+      : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function updateLoadMoreButton(id, visibleCount, totalCount) {
+  const button = document.getElementById(id);
+  if (!button) {
+    return;
+  }
+
+  const remaining = Math.max(0, totalCount - visibleCount);
+  button.hidden = remaining === 0;
+  button.textContent = remaining > 0
+    ? `Show more (${remaining} remaining)`
+    : "Show more";
+}
+
+function showMoreStatements() {
+  appState.visibleStatements += APP_CONFIG.statementsPerPage;
+  renderStatements(appState.reviews);
+}
+
+function showMoreReviews() {
+  appState.visibleReviews += APP_CONFIG.reviewsPerPage;
+  renderReviews(appState.reviews);
+}
+
 function loadReviews() {
   const script =
     document.createElement("script");
@@ -727,6 +806,9 @@ function loadReviews() {
     `&timestamp=${Date.now()}`;
 
   script.onerror = function () {
+    window.clearTimeout(timeoutId);
+    script.remove();
+
     const statusMessage =
       document.getElementById(
         "status-message"
@@ -738,7 +820,29 @@ function loadReviews() {
     }
   };
 
+  const timeoutId = window.setTimeout(() => {
+    script.remove();
+    const statusMessage = document.getElementById("status-message");
+    if (statusMessage && statusMessage.textContent === "Loading reviews...") {
+      statusMessage.textContent = "Reviews are taking longer than expected. Please refresh to try again.";
+    }
+  }, APP_CONFIG.requestTimeoutMs);
+
+  script.addEventListener("load", () => {
+    window.clearTimeout(timeoutId);
+    script.remove();
+  });
+
   document.body.appendChild(script);
 }
 
+document
+  .getElementById("load-more-statements")
+  ?.addEventListener("click", showMoreStatements);
+
+document
+  .getElementById("load-more-reviews")
+  ?.addEventListener("click", showMoreReviews);
+
 loadReviews();
+
