@@ -1,6 +1,6 @@
 # ReferenceHub
 
-ReferenceHub is a dependency-free public profile that summarizes approved professional references from a Google Apps Script endpoint. It displays profile details, aggregate ratings, common qualities, collaboration areas, statements, and featured reviews.
+ReferenceHub is a dependency-free public profile that summarizes approved professional references from a Google Apps Script endpoint. It displays profile details, a frequency-weighted cloud of reviewer-selected qualities, collaboration areas, narrative summaries, statements, and featured reviews.
 
 ## Run locally
 
@@ -14,6 +14,7 @@ The public data endpoint is configured by `API_URL` in `script.js`. Only approve
 - Reviews and statements render in batches, preventing an increasingly large DOM as submissions grow.
 - Charts aggregate the full approved dataset in the browser. This is appropriate for hundreds of reviews, not tens of thousands.
 - Profile links accept only HTTP and HTTPS URLs. User-provided text is inserted with `textContent`, not HTML.
+- Narrative summaries use grounded local templates by default. The API can provide `workingWithSummary` (or `aiSummary`) and `executiveSummary` fields when server-side AI generation is added.
 
 Before the approved dataset reaches roughly 1,000 records, move filtering, aggregates, and pagination to the server. Return a versioned response such as `{ schemaVersion, profile, summary, insights, reviews, nextCursor }`. At that point, replace JSONP with a same-origin API or a service that supports CORS, request validation, rate limiting, caching, monitoring, and cursor pagination.
 
@@ -21,6 +22,7 @@ Before the approved dataset reaches roughly 1,000 records, move filtering, aggre
 
 - Keep approval/moderation authoritative on the server; never send private submissions to the browser.
 - Restrict the endpoint to read-only public data and avoid personal email addresses or internal notes.
+- Generate AI summaries on the server after moderation. Never put an AI provider key in `script.js`, and require summaries to stay grounded in approved feedback.
 - Add caching at the API or hosting edge and invalidate it when an approved review changes.
 - Add a content security policy at the host. Allow scripts only from the site and the configured Apps Script origin while JSONP remains in use.
 - Add automated tests for response normalization, rating boundaries, selection parsing, empty states, and pagination.
