@@ -64,8 +64,8 @@ function handleReviewData(data) {
   appState.reviews = reviews;
 
   renderProfile(data.profile || {});
-  renderSummary(data);
-  renderTopQualities(reviews);
+  renderWordCloud(reviews);
+  renderNarrativeSummaries(data, reviews);
   renderCollaborationAreas(reviews);
   renderStatements(reviews);
   renderReviews(reviews);
@@ -76,6 +76,118 @@ function handleReviewData(data) {
         ? ""
         : "No approved reviews yet.";
   }
+}
+
+function renderWordCloud(reviews) {
+  const container = document.getElementById("word-cloud");
+  if (!container) {
+    return;
+  }
+
+  const words = sortCounts(
+    countSelections(reviews, HEADERS.qualities)
+  ).slice(0, 18);
+  container.replaceChildren();
+
+  if (!words.length) {
+    container.textContent = "No descriptive words are available yet.";
+    return;
+  }
+
+  const maximum = words[0][1];
+  const minimum = words[words.length - 1][1];
+  const fragment = document.createDocumentFragment();
+
+  words.forEach(([word, count], index) => {
+    const item = document.createElement("span");
+    const range = Math.max(1, maximum - minimum);
+    const weight = (count - minimum) / range;
+    item.className = `word-cloud-word word-color-${(index % 6) + 1}`;
+    item.style.setProperty("--word-scale", String(0.9 + weight * 1.5));
+    item.textContent = word;
+    item.setAttribute("aria-label", `${word}, used ${count} time${count === 1 ? "" : "s"}`);
+    fragment.appendChild(item);
+  });
+
+  container.appendChild(fragment);
+}
+
+function renderNarrativeSummaries(data, reviews) {
+  const workingElement = document.getElementById("working-with-summary");
+  const executiveElement = document.getElementById("executive-summary");
+  const qualities = sortCounts(countSelections(reviews, HEADERS.qualities))
+    .slice(0, 3)
+    .map(([label]) => label);
+  const collaborations = getTopCollaborationLabels(reviews, 3);
+  const reviewCount = reviews.length;
+
+  const suppliedWorkingSummary = String(data.workingWithSummary || data.aiSummary || "").trim();
+  const suppliedExecutiveSummary = String(data.executiveSummary || "").trim();
+
+  if (workingElement) {
+    workingElement.textContent = suppliedWorkingSummary || buildWorkingSummary(
+      reviewCount,
+      qualities,
+      collaborations
+    );
+  }
+
+  if (executiveElement) {
+    executiveElement.textContent = suppliedExecutiveSummary || buildExecutiveSummary(
+      data.profile || {},
+      reviewCount,
+      qualities,
+      collaborations
+    );
+  }
+}
+
+function buildWorkingSummary(reviewCount, qualities, collaborations) {
+  if (!reviewCount) {
+    return "A high-level working-style summary will appear once approved feedback is available.";
+  }
+
+  const qualityText = formatList(qualities) || "their recurring professional strengths";
+  const collaborationText = formatList(collaborations);
+  return `Across ${reviewCount} approved review${reviewCount === 1 ? "" : "s"}, colleagues consistently emphasize ${qualityText}. Working with this person appears to involve dependable partnership, clear professional contribution, and a constructive approach${collaborationText ? ` across ${collaborationText}` : ""}.`;
+}
+
+function buildExecutiveSummary(profile, reviewCount, qualities, collaborations) {
+  if (!reviewCount) {
+    return "An executive summary will appear once approved feedback is available.";
+  }
+
+  const name = String(profile.fullName || "This professional").trim();
+  const strengths = qualities.length
+    ? `The qualities selected most often were ${formatList(qualities)}.`
+    : "Reviewers identified a consistent set of professional strengths.";
+  const scope = formatList(collaborations);
+  const scopeSentence = scope
+    ? `Their shared work most often involved ${scope}.`
+    : "The feedback reflects experience across collaborative professional settings.";
+  return `Based on ${reviewCount} approved review${reviewCount === 1 ? "" : "s"}, ${name} is consistently described as a trusted and effective professional. ${strengths} ${scopeSentence} Overall, reviewers portray someone who contributes constructively, works well with others, and creates value through dependable execution. This summary reflects recurring themes in the approved feedback.`;
+}
+
+function formatList(items) {
+  if (!items.length) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function getTopCollaborationLabels(reviews, limit) {
+  const counts = {};
+  reviews.forEach(review => {
+    const matchingHeader = Object.keys(review).find(key =>
+      key.toLowerCase().includes("which areas did you work with this individual")
+    );
+    const value = getValue(review, HEADERS.collaborationAreas) ||
+      (matchingHeader ? String(review[matchingHeader] || "").trim() : "");
+    splitSelections(value).forEach(item => {
+      counts[item] = (counts[item] || 0) + 1;
+    });
+  });
+  return sortCounts(counts).slice(0, limit).map(([label]) => label);
 }
 
 function renderProfile(profile) {
@@ -180,70 +292,6 @@ function configureProfileLink(elementId, url) {
   link.hidden = false;
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-}
-
-function renderSummary(data) {
-  const ratingElement =
-    document.getElementById(
-      "average-rating"
-    );
-
-  const starsElement =
-    document.getElementById(
-      "average-stars"
-    );
-
-  const countElement =
-    document.getElementById(
-      "review-count"
-    );
-
-  const averageRating =
-    Number(data.averageRating) || 0;
-
-  const reviewCount =
-    Number(data.reviewCount) || 0;
-
-  if (ratingElement) {
-    ratingElement.textContent =
-      formatRating(averageRating);
-  }
-
-  if (starsElement) {
-    starsElement.textContent =
-      createStars(averageRating);
-
-    starsElement.setAttribute(
-      "aria-label",
-      `${formatRating(
-        averageRating
-      )} out of 5 stars`
-    );
-  }
-
-  if (countElement) {
-    countElement.textContent =
-      `${reviewCount} approved review${
-        reviewCount === 1 ? "" : "s"
-      }`;
-  }
-}
-
-function renderTopQualities(reviews) {
-  const counts =
-    countSelections(
-      reviews,
-      HEADERS.qualities
-    );
-
-  const topFive =
-    sortCounts(counts).slice(0, 5);
-
-  renderBarChart(
-    "qualities-chart",
-    topFive,
-    "No professional qualities are available yet."
-  );
 }
 
 function renderCollaborationAreas(reviews) {
@@ -735,18 +783,6 @@ function createStars(value) {
   );
 }
 
-function formatRating(value) {
-  const rating = Number(value);
-
-  if (!Number.isFinite(rating)) {
-    return "0";
-  }
-
-  return Number.isInteger(rating)
-    ? String(rating)
-    : rating.toFixed(2);
-}
-
 function renderEmptyMessage(
   container,
   message
@@ -845,4 +881,3 @@ document
   ?.addEventListener("click", showMoreReviews);
 
 loadReviews();
-
